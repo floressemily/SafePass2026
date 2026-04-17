@@ -55,12 +55,6 @@ import com.example.safepass2026.state.RegistroState
 @Composable
 fun RegistroScreen() {
 
-    /**
-     * ESTUDIO - Estado Local Reactivo:
-     * En Compose, la UI observa los cambios de estado. 'remember' guarda el valor
-     * a través de las recomposiciones (redibujados), y 'mutableStateOf' notifica 
-     * a la pantalla para que se actualice inmediatamente cuando el usuario escribe.
-     */
     var nombre by remember { mutableStateOf("") }
     var edad by remember { mutableStateOf("") }
     var tipoEntrada by remember { mutableStateOf("") }
@@ -112,7 +106,8 @@ fun RegistroScreen() {
 
             OutlinedTextField(
                 value = nombre,
-                onValueChange = { nombre = it },
+                // Solo guarda en el estado caracteres que NO son dígitos (filtro en tiempo real)
+                onValueChange = { input -> if (input.none { it.isDigit() }) nombre = input },
                 label = { Text("Nombre completo") },
                 placeholder = { Text("Ej: Juan Pérez") },
                 leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
@@ -127,8 +122,7 @@ fun RegistroScreen() {
                 label = { Text("Edad") },
                 placeholder = { Text("Ej: 25") },
                 singleLine = true,
-                // ESTUDIO - Entrada Segura (Prevención desde UI):
-                // Restringimos el teclado nativo solo a números para evitar caracteres de texto cruzados.
+                // Teclado numérico para prevenir texto en el campo de edad
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -178,12 +172,7 @@ fun RegistroScreen() {
                 visible = estado !is RegistroState.Idle,
                 enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 })
             ) {
-                /**
-                 * ESTUDIO - Renderizado por Estado y 'when' exhaustivo:
-                 * Evaluamos la 'sealed class' (RegistroState). El compilador fuerza a que
-                 * manejemos los 3 estados (Idle, Success, Error) sin necesidad de un 'else',
-                 * previniendo pantallas en blanco y asegurando que la UI sea determinista.
-                 */
+                // when exhaustivo: el compilador obliga a manejar los 3 estados sin else
                 when (val s = estado) {
 
                     is RegistroState.Idle -> {}
@@ -219,7 +208,6 @@ fun RegistroScreen() {
 
                                 HorizontalDivider(color = Color(0xFFA5D6A7))
 
-                                // ESTUDIO - Extracción de datos y Operador Elvis (?:) en UI
                                 FilaDetalle(label = "Nombre", valor = s.asistente.nombre)
                                 FilaDetalle(label = "Edad", valor = "${s.asistente.edad ?: 0} años")
                                 FilaDetalle(label = "Entrada", valor = s.asistente.tipoEntrada)
@@ -263,7 +251,7 @@ fun RegistroScreen() {
                                 )
                                 Column {
                                     Text(
-                                        text = "Error de validación",
+                                        text = "Error Crítico: ${s.errorCode}",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = Color(0xFFC62828)
